@@ -1,0 +1,2 @@
+## blog is the basic stuff you need for a blog using sqlite3 and Go.
+simply import into your project, create a Blog object and use that to manage your database connection as well as add/present new blog entries. To present, I suggest html templates, you can select n entries and present those using a []Entry and {{range .}} inside a template.
