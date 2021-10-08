@@ -24,7 +24,7 @@ func NewBlog() *Blog {
 	b := Blog{}
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
-	if file, err := os.OpenFile("./blog-database.db", os.O_CREATE|os.O_RDWR, 0666); err != nil {
+	if file, err := os.OpenFile("./blog-database.db", os.O_CREATE|os.O_RDWR, 0777); err != nil {
 		log.Println("Error in NewBlog:", err)
 	} else {
 		file.Close()
@@ -50,7 +50,7 @@ func (b *Blog) createTable() {
 		"timestamp" TEXT,
 		"title" TEXT,
 		"body" TEXT,
-		"userid" id
+		"userid" integer,
 		FOREIGN KEY(userid) REFERENCES users(id)
 	);`
 	if statement, err := b.database.Prepare(sqlStatement); err != nil {
