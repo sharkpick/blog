@@ -35,7 +35,7 @@ func NewBlog() *Blog {
 	} else {
 		b.database = database
 	}
-	//b.createTable()
+	b.createTable()
 	return &b
 
 }
@@ -49,7 +49,9 @@ func (b *Blog) createTable() {
 		"id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
 		"timestamp" TEXT,
 		"title" TEXT,
-		"body" TEXT
+		"body" TEXT,
+		"userid" id
+		FOREIGN KEY(userid) REFERENCES users(id)
 	);`
 	if statement, err := b.database.Prepare(sqlStatement); err != nil {
 		log.Println("Error in b.createTable():", err) // likely means we're re-launching but log it anyway
