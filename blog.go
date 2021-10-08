@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 	"sync"
 	"time"
 )
@@ -24,18 +23,11 @@ func NewBlog() *Blog {
 	b := Blog{}
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
-	if file, err := os.OpenFile("./blog-database.db", os.O_CREATE|os.O_RDWR, 0777); err != nil {
-		log.Println("Error in NewBlog:", err)
-	} else {
-		file.Close()
-		log.Println("./blog-database exists")
-	}
 	if database, err := sql.Open("sqlite3", "./blog-database.db"); err != nil {
 		log.Fatalln("Fatal Error: Unable to read ./blog-database.db")
 	} else {
 		b.database = database
 	}
-	b.createTable()
 	return &b
 
 }
