@@ -56,7 +56,9 @@ func (b *Blog) createTable() {
 	if statement, err := b.database.Prepare(sqlStatement); err != nil {
 		log.Println("Error in b.createTable():", err) // likely means we're re-launching but log it anyway
 	} else {
-		statement.Exec()
+		if _, err = statement.Exec(); err != nil {
+			log.Fatalln("Failed to make table users: ", err)
+		}
 	}
 }
 
