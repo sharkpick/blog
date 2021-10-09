@@ -77,6 +77,7 @@ func (b *Blog) GetEntries() []Entry {
 		defer row.Close()
 		for row.Next() {
 			var entry Entry
+			fmt.Println(row.Columns())
 			row.Scan(&entry.ID, &entry.Timestamp, &entry.Title, &entry.Body, &entry.UserID, &entry.Username)
 			entries = append(entries, entry)
 		}
