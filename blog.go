@@ -68,13 +68,16 @@ func (b *Blog) DeleteEntry(id int) {
 
 func (b *Blog) GetEntries() []Entry {
 	entries := make([]Entry, 0)
-	if row, err := b.database.Query("SELECT * FROM entries ORDER BY id DESC"); err != nil {
+	if row, err := b.database.Query(
+		"SELECT * FROM entries INNER JOIN users ON entries.userid=users.id ORDER BY id DESC",
+		); err != nil {
 		log.Fatalln("Fatal Error in b.GetEntries():", err)
 	} else {
 		defer row.Close()
 		for row.Next() {
 			var entry Entry
 			row.Scan(&entry.ID, &entry.Timestamp, &entry.Title, &entry.Body, &entry.UserID)
+			entry.Username = 
 			entries = append(entries, entry)
 		}
 	}

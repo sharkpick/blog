@@ -6,4 +6,5 @@ type Entry struct {
 	Body      string
 	ID        int
 	UserID    int
+	Username  string
 }
