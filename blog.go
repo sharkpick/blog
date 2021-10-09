@@ -74,13 +74,7 @@ func (b *Blog) GetEntries() []Entry {
 		defer row.Close()
 		for row.Next() {
 			var entry Entry
-			var timestamp string
-			row.Scan(&entry.ID, &timestamp, &entry.Title, &entry.Body, &entry.UserID)
-			if t, err := time.Parse(TimestampFormat, timestamp); err != nil {
-				log.Fatalln("Fatal Error - can't parse timestamp", err)
-			} else {
-				entry.Timestamp = t.Format(TimestampFormat)
-			}
+			row.Scan(&entry.ID, &entry.Timestamp, &entry.Title, &entry.Body, &entry.UserID)
 			entries = append(entries, entry)
 		}
 	}
