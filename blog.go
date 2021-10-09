@@ -54,14 +54,14 @@ func (b *Blog) createTable() {
 	}
 }
 
-func (b *Blog) InsertEntry(title, body string) {
+func (b *Blog) InsertEntry(title, body string, userID int) {
 	log.Println("inserting new blog entry")
 	timestamp := fmt.Sprintf("%v", time.Now().Format(TimestampFormat))
-	sqlStatement := `INSERT INTO entries(timestamp, title, body) VALUES (?, ?, ?)`
+	sqlStatement := `INSERT INTO entries(timestamp, title, body, userID) VALUES (?, ?, ?, ?)`
 	if statement, err := b.database.Prepare(sqlStatement); err != nil {
 		log.Fatalln("Fatal Error in b.InsertEntry():", err)
 	} else {
-		if _, err := statement.Exec(timestamp, title, body); err != nil {
+		if _, err := statement.Exec(timestamp, title, body, userID); err != nil {
 			log.Fatalln("Fatal Error in b.InsertEntry():", err)
 		}
 	}
