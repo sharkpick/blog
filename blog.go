@@ -27,10 +27,6 @@ func NewBlog(db *sql.DB) *Blog {
 
 }
 
-func (b *Blog) CleanupBlog() {
-	b.database.Close()
-}
-
 func (b *Blog) InsertEntry(title, body string, userID int) {
 	timestamp := fmt.Sprintf("%v", time.Now().Format(TimestampFormat))
 	sqlStatement := `INSERT INTO entries(timestamp, title, body, userID) VALUES (?, ?, ?, ?)`
