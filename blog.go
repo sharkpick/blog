@@ -12,25 +12,19 @@ import (
 
 const TimestampFormat = time.RFC1123
 
-type Blog struct {
-	database *sql.DB
+type Entry struct {
+	Timestamp string
+	Title     string
+	Body      string
+	ID        int
+	UserID    int
+	Username  string
 }
 
-func (b *Blog) GetDatabase() *sql.DB {
-	return b.database
-}
-
-func NewBlog(db *sql.DB) *Blog {
-	b := Blog{}
-	b.database = db
-	return &b
-
-}
-
-func (b *Blog) InsertEntry(title, body string, userID int) {
+func InsertEntry(db *sql.DB, title, body string, userID int) {
 	timestamp := fmt.Sprintf("%v", time.Now().Format(TimestampFormat))
 	sqlStatement := `INSERT INTO entries(timestamp, title, body, userID) VALUES (?, ?, ?, ?)`
-	if statement, err := b.database.Prepare(sqlStatement); err != nil {
+	if statement, err := db.Prepare(sqlStatement); err != nil {
 		log.Fatalln("Fatal Error in b.InsertEntry():", err)
 	} else {
 		if _, err := statement.Exec(timestamp, title, body, userID); err != nil {
@@ -40,9 +34,9 @@ func (b *Blog) InsertEntry(title, body string, userID int) {
 	log.Println("finished inserting blog entry", title)
 }
 
-func (b *Blog) DeleteEntry(id int) {
+func DeleteEntry(db *sql.DB, id int) {
 	sqlStatement := `DELETE FROM entries WHERE id=?`
-	if statement, err := b.database.Prepare(sqlStatement); err != nil {
+	if statement, err := db.Prepare(sqlStatement); err != nil {
 		log.Fatalln("Fatal Error in b.DeleteEntry()", err)
 	} else {
 		if _, err := statement.Exec(id); err != nil {
@@ -52,9 +46,9 @@ func (b *Blog) DeleteEntry(id int) {
 	log.Println("Finished deleting blog entry", id)
 }
 
-func (b *Blog) GetEntries() []Entry {
+func GetEntries(db *sql.DB) []Entry {
 	entries := make([]Entry, 0)
-	if row, err := b.database.Query(`SELECT entries.id, entries.timestamp, 
+	if row, err := db.Query(`SELECT entries.id, entries.timestamp, 
 	entries.title, entries.body, entries.userid, 
 	users.username FROM entries INNER JOIN users 
 	ON entries.userid=users.id ORDER BY entries.id DESC;`); err != nil {
