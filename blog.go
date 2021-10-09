@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -77,8 +78,8 @@ func (b *Blog) GetEntries() []Entry {
 		defer row.Close()
 		for row.Next() {
 			var entry Entry
-			fmt.Println(row.Columns())
 			row.Scan(&entry.ID, &entry.Timestamp, &entry.Title, &entry.Body, &entry.UserID, &entry.Username)
+			entry.Username = strings.Split(entry.Username, "@")[0]
 			entries = append(entries, entry)
 		}
 	}
