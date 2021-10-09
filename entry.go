@@ -5,4 +5,5 @@ type Entry struct {
 	Title     string
 	Body      string
 	ID        int
+	UserID    int
 }

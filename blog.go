@@ -4,27 +4,32 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"sync"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const TimestampFormat = time.RFC1123
 
 type Blog struct {
 	database *sql.DB
-	mutex    sync.Mutex
 }
 
 func (b *Blog) GetDatabase() *sql.DB {
 	return b.database
 }
 
-func NewBlog() *Blog {
+func NewBlog(file ...string) *Blog {
+	dbFile := func() string {
+		if len(file) == 0 {
+			return "./blog-database.db"
+		} else {
+			return file[0]
+		}
+	}()
 	b := Blog{}
-	b.mutex.Lock()
-	defer b.mutex.Unlock()
-	if database, err := sql.Open("sqlite3", "./blog-database.db"); err != nil {
-		log.Fatalln("Fatal Error: Unable to read ./blog-database.db")
+	if database, err := sql.Open("sqlite3", dbFile); err != nil {
+		log.Fatalln("Fatal Error: Unable to read", dbFile)
 	} else {
 		b.database = database
 	}
@@ -36,26 +41,7 @@ func (b *Blog) CleanupBlog() {
 	b.database.Close()
 }
 
-func (b *Blog) createTable() {
-	sqlStatement := `CREATE TABLE entries (
-		"id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-		"timestamp" TEXT,
-		"title" TEXT,
-		"body" TEXT,
-		"userid" integer,
-		FOREIGN KEY(userid) REFERENCES users(id)
-	);`
-	if statement, err := b.database.Prepare(sqlStatement); err != nil {
-		log.Println("Error in b.createTable():", err) // likely means we're re-launching but log it anyway
-	} else {
-		if _, err = statement.Exec(); err != nil {
-			log.Fatalln("Failed to make table users: ", err)
-		}
-	}
-}
-
 func (b *Blog) InsertEntry(title, body string, userID int) {
-	log.Println("inserting new blog entry")
 	timestamp := fmt.Sprintf("%v", time.Now().Format(TimestampFormat))
 	sqlStatement := `INSERT INTO entries(timestamp, title, body, userID) VALUES (?, ?, ?, ?)`
 	if statement, err := b.database.Prepare(sqlStatement); err != nil {
@@ -68,6 +54,18 @@ func (b *Blog) InsertEntry(title, body string, userID int) {
 	log.Println("finished inserting blog entry", title)
 }
 
+func (b *Blog) DeleteEntry(id int) {
+	sqlStatement := `DELETE FROM entries WHERE id=?`
+	if statement, err := b.database.Prepare(sqlStatement); err != nil {
+		log.Fatalln("Fatal Error in b.DeleteEntry()", err)
+	} else {
+		if _, err := statement.Exec(id); err != nil {
+			log.Fatalln("Fatal Error executing b.DeleteEntry()")
+		}
+	}
+	log.Println("Finished deleting blog entry", id)
+}
+
 func (b *Blog) GetEntries() []Entry {
 	entries := make([]Entry, 0)
 	if row, err := b.database.Query("SELECT * FROM entries ORDER BY id DESC"); err != nil {
@@ -77,7 +75,7 @@ func (b *Blog) GetEntries() []Entry {
 		for row.Next() {
 			var entry Entry
 			var timestamp string
-			row.Scan(&entry.ID, &timestamp, &entry.Title, &entry.Body)
+			row.Scan(&entry.ID, &timestamp, &entry.Title, &entry.Body, &entry.UserID)
 			if t, err := time.Parse(TimestampFormat, timestamp); err != nil {
 				log.Fatalln("Fatal Error - can't parse timestamp", err)
 			} else {
