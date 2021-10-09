@@ -1,19 +1,29 @@
 package blog
 
 import (
+	"database/sql"
+	"log"
 	"testing"
 )
 
+func loadDB() *sql.DB {
+	dbFile := "test.db"
+	database, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		log.Fatalln("Fatal Error: Unable to read", dbFile)
+	}
+	return database
+
+}
 func TestNewBlog(t *testing.T) {
-	myBlog := NewBlog("./test.db")
-	defer myBlog.CleanupBlog()
+	myBlog := NewBlog(loadDB())
 	if nil == myBlog.database {
 		t.Fatalf("Error: database should not be nil")
 	}
 }
 
 func TestInsertEntry(t *testing.T) {
-	myBlog := NewBlog("./test.db")
+	myBlog := NewBlog(loadDB())
 	defer myBlog.CleanupBlog()
 	myBlog.InsertEntry("Test", "TestBody", 1)
 	myBlog.InsertEntry("Test2", "Test2Body", 1)
@@ -24,7 +34,7 @@ func TestInsertEntry(t *testing.T) {
 }
 
 func TestDeleteEntry(t *testing.T) {
-	myBlog := NewBlog("./test.db")
+	myBlog := NewBlog(loadDB())
 	defer myBlog.CleanupBlog()
 	currentEntries := myBlog.GetEntries()
 	for i := 0; i < len(currentEntries); i++ {

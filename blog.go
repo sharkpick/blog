@@ -20,20 +20,9 @@ func (b *Blog) GetDatabase() *sql.DB {
 	return b.database
 }
 
-func NewBlog(file ...string) *Blog {
-	dbFile := func() string {
-		if len(file) == 0 {
-			return "./blog-database.db"
-		} else {
-			return file[0]
-		}
-	}()
+func NewBlog(db *sql.DB) *Blog {
 	b := Blog{}
-	if database, err := sql.Open("sqlite3", dbFile); err != nil {
-		log.Fatalln("Fatal Error: Unable to read", dbFile)
-	} else {
-		b.database = database
-	}
+	b.database = db
 	return &b
 
 }
