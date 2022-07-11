@@ -12,6 +12,7 @@ const TimestampFormat = time.RFC1123
 const (
 	UsersTable       = "tUsers"
 	BlogEntriesTable = "tEntries"
+	CommentsTable    = "tComments"
 )
 
 var (
@@ -64,6 +65,11 @@ func GetEntry(db *sql.DB, id int64) (Entry, error) {
 	if err != nil {
 		return Entry{}, fmt.Errorf("GetEntry %w: %s", ErrUnableToQuery, err)
 	}
+	comments, err := GetComments(db, entry.ID)
+	if err != nil {
+		log.Println("GetEntries %w", err)
+	}
+	entry.Comments = comments
 	return entry, nil
 }
 
@@ -86,6 +92,11 @@ func GetEntries(db *sql.DB) ([]Entry, error) {
 			log.Println("GetEntries %w: %s", ErrUnableToScan, err)
 			continue
 		}
+		comments, err := GetComments(db, entry.ID)
+		if err != nil {
+			log.Println("GetEntries %w", err)
+		}
+		entry.Comments = comments
 		entries = append(entries, entry)
 	}
 	return entries, nil
