@@ -4,63 +4,102 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"strings"
 	"time"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 const TimestampFormat = time.RFC1123
 
-type Entry struct {
-	Timestamp string
-	Title     string
-	Body      string
-	ID        int
-	UserID    int
-	Username  string
-}
+const (
+	UsersTable       = "tUsers"
+	BlogEntriesTable = "tEntries"
+)
 
-func InsertEntry(db *sql.DB, title, body string, userID int) {
-	timestamp := fmt.Sprintf("%v", time.Now().Format(TimestampFormat))
-	sqlStatement := `INSERT INTO entries(timestamp, title, body, userID) VALUES (?, ?, ?, ?)`
-	if statement, err := db.Prepare(sqlStatement); err != nil {
-		log.Fatalln("Fatal Error in b.InsertEntry():", err)
-	} else {
-		if _, err := statement.Exec(timestamp, title, body, userID); err != nil {
-			log.Fatalln("Fatal Error in b.InsertEntry():", err)
-		}
+var (
+	ErrEntryNotFound       = fmt.Errorf("blog entry not found")
+	ErrUnableToScan        = fmt.Errorf("could not scan entry to struct")
+	ErrUnableToPrepare     = fmt.Errorf("could not prepare sql statement")
+	ErrUnableToExecute     = fmt.Errorf("could not execute sql statement")
+	ErrUnableToQuery       = fmt.Errorf("could not query with sql statement")
+	ErrCantFindComments    = fmt.Errorf("could not find comments for post")
+	ErrCantGetLastInsertID = fmt.Errorf("could not get LastInsertID")
+)
+
+func InsertEntry(db *sql.DB, title, body string, userID int64, entryType EntryType) (Entry, error) {
+	timestamp := time.Now().Format(TimestampFormat)
+	sql_string := "INSERT INTO " + BlogEntriesTable + "(timestamp, title, body, userid, type) VALUES (?, ?, ?, ?, ?)"
+	prepared, err := db.Prepare(sql_string)
+	if err != nil {
+		return Entry{}, fmt.Errorf("CreateEntryAndInsert %w: %s", ErrUnableToPrepare, err)
 	}
-	log.Println("finished inserting blog entry", title)
-}
-
-func DeleteEntry(db *sql.DB, id int) {
-	sqlStatement := `DELETE FROM entries WHERE id=?`
-	if statement, err := db.Prepare(sqlStatement); err != nil {
-		log.Fatalln("Fatal Error in b.DeleteEntry()", err)
-	} else {
-		if _, err := statement.Exec(id); err != nil {
-			log.Fatalln("Fatal Error executing b.DeleteEntry()")
-		}
+	n, err := prepared.Exec(timestamp, title, body, userID, entryType)
+	if err != nil {
+		return Entry{}, fmt.Errorf("CreateEntryAndInsert %w: %s", ErrUnableToExecute, err)
 	}
-	log.Println("Finished deleting blog entry", id)
+	id, err := n.LastInsertId()
+	if err != nil {
+		return Entry{}, fmt.Errorf("CreateEntryAndInsert %w: %s", ErrCantGetLastInsertID, err)
+	}
+	return GetEntry(db, id)
 }
 
-func GetEntries(db *sql.DB) []Entry {
+func entrySELECTStatement() string {
+	return fmt.Sprintf("SELECT %s.id, %s.timestamp, %s.title, %s.body, %s.userid, %s.type, %s.username FROM %s INNER JOIN %s ON %s.userid=%s.id WHERE %s.id=?;",
+		BlogEntriesTable, BlogEntriesTable, BlogEntriesTable, BlogEntriesTable, BlogEntriesTable, BlogEntriesTable, UsersTable, BlogEntriesTable, UsersTable, BlogEntriesTable, UsersTable, BlogEntriesTable)
+}
+
+func entriesSELECTStatement() string {
+	return fmt.Sprintf("SELECT %s.id, %s.timestamp, %s.title, %s.body, %s.userid, %s.type, %s.username FROM %s INNER JOIN %s ON %s.userid=%s.id ORDER BY %s.id DESC;",
+		BlogEntriesTable, BlogEntriesTable, BlogEntriesTable, BlogEntriesTable, BlogEntriesTable, BlogEntriesTable, UsersTable, BlogEntriesTable, UsersTable, BlogEntriesTable, UsersTable, BlogEntriesTable)
+}
+
+func GetEntry(db *sql.DB, id int64) (Entry, error) {
+	sql_string := entrySELECTStatement()
+	prepared, err := db.Prepare(sql_string)
+	if err != nil {
+		return Entry{}, fmt.Errorf("GetEntry %w: %s", ErrUnableToPrepare, err)
+	}
+	row := prepared.QueryRow(id)
+	var entry Entry
+	err = row.Scan(&entry.ID, &entry.Timestamp, &entry.Title, &entry.Body, &entry.UserID, &entry.Type, &entry.Username)
+	if err != nil {
+		return Entry{}, fmt.Errorf("GetEntry %w: %s", ErrUnableToQuery, err)
+	}
+	return entry, nil
+}
+
+func GetEntries(db *sql.DB) ([]Entry, error) {
+	sql_string := entriesSELECTStatement()
+	prepared, err := db.Prepare(sql_string)
+	if err != nil {
+		return nil, fmt.Errorf("GetEntries %w: %s", ErrUnableToPrepare, err)
+	}
+	rows, err := prepared.Query()
+	if err != nil {
+		return nil, fmt.Errorf("GetEntries %w: %s", ErrUnableToQuery, err)
+	}
+	defer rows.Close()
 	entries := make([]Entry, 0)
-	if row, err := db.Query(`SELECT entries.id, entries.timestamp, 
-	entries.title, entries.body, entries.userid, 
-	users.username FROM entries INNER JOIN users 
-	ON entries.userid=users.id ORDER BY entries.id DESC;`); err != nil {
-		log.Fatalln("Fatal Error in b.GetEntries():", err)
-	} else {
-		defer row.Close()
-		for row.Next() {
-			var entry Entry
-			row.Scan(&entry.ID, &entry.Timestamp, &entry.Title, &entry.Body, &entry.UserID, &entry.Username)
-			entry.Username = strings.Split(entry.Username, "@")[0]
-			entries = append(entries, entry)
+	for rows.Next() {
+		var entry Entry
+		err = rows.Scan(&entry.ID, &entry.Timestamp, &entry.Title, &entry.Body, &entry.UserID, &entry.Type, &entry.Username)
+		if err != nil {
+			log.Println("GetEntries %w: %s", ErrUnableToScan, err)
+			continue
 		}
+		entries = append(entries, entry)
 	}
-	return entries
+	return entries, nil
+}
+
+func UpdateEntry(db *sql.DB, title, body string, postID int64) (Entry, error) {
+	sql_string := "UPDATE " + BlogEntriesTable + " SET title=?, body=? WHERE id=?"
+	prepared, err := db.Prepare(sql_string)
+	if err != nil {
+		return Entry{}, fmt.Errorf("UpdateEntry %w: %s", ErrUnableToPrepare, err)
+	}
+	_, err = prepared.Exec(title, body, postID)
+	if err != nil {
+		return Entry{}, fmt.Errorf("UpdateEntry %w: %s", ErrUnableToExecute, err)
+	}
+	return GetEntry(db, postID)
 }

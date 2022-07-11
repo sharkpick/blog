@@ -1,11 +1,18 @@
-# blog is the basic stuff you need for a blog using sqlite3 and Go.
+# blog
+
 
 # Requirements: 
+authentication (https://github.com/sharkpick/authentication)
 Go 1.17+ 
 sqlite3
 
-# Notes:
-- you'll need to configure a table for users, then entries (and use userID as a foreign key in entries to link them together). The Entry struct is a good reference, but keep in mind that the username string is identified by the DB Query and doesn't need to a column in your table.
+## About:
+package blog offers simple functions to manage a blog. requires authentication package (https://github.com/sharkpick/authentication) in order to manage entry ownership.
+
+entries may be classified as a Blog or News entry, which can make managing a news feed easy by allowing you to send more important blog entries to your news feed, or use both separately.
+
+## Usage:
+simply open your sqlite3 database and send it along to the functions to manage the blog. run the GenerateBlogTable() function at least once to build the table so your entries have somewhere to go.
 
 use NewBlog() with a *sql.DB to start up the Blog struct. 
 
