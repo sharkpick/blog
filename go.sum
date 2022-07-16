@@ -1,2 +1,4 @@
 github.com/mattn/go-sqlite3 v1.14.9 h1:10HX2Td0ocZpYEjhilsuo6WWtUqttj2Kb0KtD86/KYA=
 github.com/mattn/go-sqlite3 v1.14.9/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4A/KQRfk6bU=
+github.com/sharkpick/authentication v0.0.0-20220710222145-6cb8ef88eda3 h1:czQNe6fidSIEZfd05uwGfL/mKI729Y5A4sOm7REUjuM=
+github.com/sharkpick/authentication v0.0.0-20220710222145-6cb8ef88eda3/go.mod h1:DyPxd3V2kLWWfA91tvLNpSf5UjQXxojU2TkROtJxbjY=
